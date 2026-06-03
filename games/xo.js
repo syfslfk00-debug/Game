@@ -13,7 +13,7 @@ let players = [];
 module.exports = {
   name: 'xo',
   aliases: ['اكس'],
-  execute(message, args, callback) {
+  async execute(message, args, callback) {
     if (GAME_ACTIVE) {
       message.reply({ content: '❌ | لقد بدأت لعبة أخرى بالفعل.' });
       callback();

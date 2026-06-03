@@ -1,45 +1,48 @@
-﻿const fs = require('fs');
-const path = './inventory.json';
+const Inventory = require('./models/Inventory.js');
 
-function load() {
-  try {
-    if (!fs.existsSync(path)) fs.writeFileSync(path, '{}');
-    return JSON.parse(fs.readFileSync(path, 'utf8'));
-  } catch (_) { return {}; }
+// MongoDB-backed replacement for the previous inventory.json file storage.
+
+function mapToObject(items) {
+  if (!items) return {};
+  if (items instanceof Map) return Object.fromEntries(items.entries());
+  return { ...items };
 }
 
-function save(data) {
-  fs.writeFileSync(path, JSON.stringify(data, null, 2));
+async function addItem(userId, item) {
+  await Inventory.updateOne(
+    { userId },
+    { $inc: { [`items.${item}`]: 1 }, $setOnInsert: { userId } },
+    { upsert: true }
+  );
 }
 
-function addItem(userId, item) {
-  const inv = load();
-  if (!inv[userId]) inv[userId] = {};
-  inv[userId][item] = (inv[userId][item] || 0) + 1;
-  save(inv);
+async function getItems(userId) {
+  const row = await Inventory.findOne({ userId }).lean();
+  return mapToObject(row?.items);
 }
 
-function getItems(userId) {
-  const inv = load();
-  return inv[userId] || {};
-}
+async function useItem(userId, item) {
+  const inv = await Inventory.findOne({ userId });
+  const current = inv?.items?.get(item) || 0;
+  if (!inv || current <= 0) return false;
 
-function useItem(userId, item) {
-  const inv = load();
-  if (!inv[userId] || !inv[userId][item] || inv[userId][item] <= 0) return false;
-  inv[userId][item]--;
-  if (inv[userId][item] === 0) delete inv[userId][item];
-  save(inv);
+  if (current === 1) {
+    inv.items.delete(item);
+  } else {
+    inv.items.set(item, current - 1);
+  }
+
+  await inv.save();
   return true;
 }
 
-function hasItem(userId, item) {
-  const inv = load();
-  return (inv[userId]?.[item] || 0) > 0;
+async function hasItem(userId, item) {
+  const inv = await getItems(userId);
+  return (inv[item] || 0) > 0;
 }
 
-function resetAll() {
-  save({});
+async function resetAll() {
+  await Inventory.deleteMany({});
 }
 
 module.exports = { addItem, getItems, useItem, hasItem, resetAll };

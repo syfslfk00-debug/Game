@@ -1,0 +1,1 @@
+points.json is retained only as legacy file storage. The application now uses MongoDB through database.js.

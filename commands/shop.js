@@ -33,10 +33,10 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function buildShopImage(userId) {
-  const points    = db.getUserPoints(userId);
+async function buildShopImage(userId) {
+  const points    = await db.getUserPoints(userId);
   const costs     = config.abilityCosts.roulette;
-  const inventory = inv.getItems(userId);
+  const inventory = await inv.getItems(userId);
 
   const W       = 700;
   const PAD     = 24;
@@ -141,14 +141,15 @@ function buildShopImage(userId) {
   return canvas.toBuffer('image/png');
 }
 
-function buildSelectMenu(userId) {
-  const points  = db.getUserPoints(userId);
+async function buildSelectMenu(userId) {
+  const points  = await db.getUserPoints(userId);
   const costs   = config.abilityCosts.roulette;
+  const inventory = await inv.getItems(userId);
 
   const options = ITEMS.map((item, idx) => {
     const cost      = costs[item.costKey];
     const canAfford = points >= cost;
-    const owned     = inv.getItems(userId)[item.id] || 0;
+    const owned     = inventory[item.id] || 0;
     return {
       label:       `${idx + 1}. ${item.name}`,
       description: `${cost} نقطة  |  عندك: ${owned}  ${canAfford ? '✓' : '✗'}`,
@@ -171,8 +172,8 @@ module.exports = {
     const userId = message.author.id;
     const costs  = config.abilityCosts.roulette;
 
-    const imageBuffer = buildShopImage(userId);
-    const row         = buildSelectMenu(userId);
+    const imageBuffer = await buildShopImage(userId);
+    const row         = await buildSelectMenu(userId);
 
     const sent = await message.reply({
       files: [{ attachment: imageBuffer, name: 'shop.png' }],
@@ -205,7 +206,7 @@ module.exports = {
       if (!item) { await i.reply({ content: 'قدرة غير موجودة.', ephemeral: true }); return; }
 
       const cost       = costs[item.costKey];
-      const userPoints = db.getUserPoints(userId);
+      const userPoints = await db.getUserPoints(userId);
 
       if (userPoints < cost) {
         await i.reply({
@@ -215,12 +216,12 @@ module.exports = {
         return;
       }
 
-      db.removePoints(userId, cost);
-      inv.addItem(userId, itemId);
+      await db.removePoints(userId, cost);
+      await inv.addItem(userId, itemId);
       cooldowns.set(userId, now);
 
-      const newPoints = db.getUserPoints(userId);
-      const owned     = inv.getItems(userId)[itemId] || 0;
+      const newPoints = await db.getUserPoints(userId);
+      const owned     = (await inv.getItems(userId))[itemId] || 0;
 
       await i.reply({
         content: `تم شراء **${item.name}** بنجاح\nرصيدك المتبقي: **${newPoints}** نقطة  |  عندك الان: **${owned}**`,
@@ -228,8 +229,8 @@ module.exports = {
       });
 
       try {
-        const newBuf = buildShopImage(userId);
-        const newRow = buildSelectMenu(userId);
+        const newBuf = await buildShopImage(userId);
+        const newRow = await buildSelectMenu(userId);
         await sent.edit({ files: [{ attachment: newBuf, name: 'shop.png' }], components: [newRow] });
       } catch (_) {}
     });

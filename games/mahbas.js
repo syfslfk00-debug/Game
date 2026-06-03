@@ -10,15 +10,15 @@ const config = require('../config.js');
 
 const MAX_PER_TEAM = 10;
 const TOTAL_ROUNDS = 10;
-const HIDE_TIME    = 20000; 
-const GUESS_TIME   = 30000; 
+const HIDE_TIME    = 20000;
+const GUESS_TIME   = 30000;
 
 let GAME_ACTIVE = false;
 
 module.exports = {
   name: 'محبس',
   aliases: ['mahbas'],
-  execute(message, args, callback) {
+  async execute(message, args, callback) {
     if (GAME_ACTIVE) {
       message.reply('> **❌ | لقد بدأت لعبة أخرى بالفعل.**');
       callback();

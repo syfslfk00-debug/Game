@@ -51,7 +51,7 @@ function buildWordImage(word) {
 module.exports = {
   name: 'fast',
   aliases: ['اسرع', 'سرعة'],
-  execute(message, args, callback) {
+  async execute(message, args, callback) {
     const word = WORDS[Math.floor(Math.random() * WORDS.length)];
     const img  = buildWordImage(word);
 

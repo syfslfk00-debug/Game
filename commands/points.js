@@ -115,8 +115,8 @@ module.exports = {
   aliases: ['نقاط', 'points', 'mypoints'],
   async execute(message) {
     const userId  = message.author.id;
-    const points  = db.getUserPoints(userId);
-    const allUsers = db.getTopUsers(1000);
+    const points  = await db.getUserPoints(userId);
+    const allUsers = await db.getTopUsers(1000);
     const rank    = allUsers.findIndex(([id]) => id === userId) + 1;
 
     const buffer = await buildPointsImage(message.author, points, rank);

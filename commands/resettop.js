@@ -17,7 +17,7 @@ module.exports = {
       return message.reply({ content: '❌ | ليس لديك صلاحية لاستخدام هذا الأمر.' });
     }
 
-    const topUsers = db.getTopUsers(10);
+    const topUsers = await db.getTopUsers(10);
     const client = message.client;
 
     let listText = '';
@@ -60,8 +60,8 @@ module.exports = {
         return message.channel.send({ components: [cancelContainer], flags: MessageFlags.IsComponentsV2 });
       }
 
-      db.resetAllPoints();
-      inv.resetAll();
+      await db.resetAllPoints();
+      await inv.resetAll();
 
       const doneContainer = new ContainerBuilder()
         .setAccentColor(0x00FF00)

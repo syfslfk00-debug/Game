@@ -36,7 +36,7 @@ const CATEGORIES = ['اسم إنسان', 'اسم حيوان', 'اسم نبات',
 module.exports = {
   name: 'replica',
   aliases: ["ريبلكا"],
-  execute(message, args, callback) {
+  async execute(message, args, callback) {
     if (!GEMINI_API_KEY) {
         message.reply("⚠️ | عذراً، لم يتم إعداد مفتاح Gemini API لهذه اللعبة. يرجى إضافته إلى ملف `.env`.");
         callback();

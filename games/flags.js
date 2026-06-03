@@ -58,7 +58,7 @@ const COUNTRIES = [
 module.exports = {
   name: 'flags',
   aliases: ['اعلام'],
-  execute(message, args, callback) {
+  async execute(message, args, callback) {
     startGame(message, callback);
   }
 };
@@ -121,7 +121,7 @@ async function startGame(context, callback) {
       else if (timeTaken < 18) points = 2;
 
       await db.addPoints(msg.author.id, points);
-      const totalPoints = db.getUserPoints(msg.author.id);
+      const totalPoints = await db.getUserPoints(msg.author.id);
 
       const win = new ContainerBuilder()
         .setAccentColor(config.colors.flags)

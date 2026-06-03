@@ -1,22 +1,30 @@
-﻿const fs = require('fs');
+const Points = require('./models/Points.js');
 
-if (!fs.existsSync('./points.json')) {
-  fs.writeFileSync('./points.json', JSON.stringify({}));
-}
+// MongoDB-backed replacement for the previous points.json file storage.
 
-const readDatabase = () => {
+const normalizePointValue = (value) => Number(value) || 0;
+
+const readDatabase = async () => {
   try {
-    const data = fs.readFileSync('./points.json', 'utf8');
-    return JSON.parse(data);
+    const rows = await Points.find({}).lean();
+    return rows.reduce((data, row) => {
+      data[row.userId] = normalizePointValue(row.points);
+      return data;
+    }, {});
   } catch (err) {
     console.error('Error reading database:', err);
     return {};
   }
 };
 
-const saveDatabase = (data) => {
+const saveDatabase = async (data) => {
   try {
-    fs.writeFileSync('./points.json', JSON.stringify(data, null, 2));
+    await Points.deleteMany({});
+    const entries = Object.entries(data || {}).map(([userId, points]) => ({
+      userId,
+      points: normalizePointValue(points),
+    }));
+    if (entries.length > 0) await Points.insertMany(entries);
     return true;
   } catch (err) {
     console.error('Error saving to database:', err);
@@ -24,71 +32,71 @@ const saveDatabase = (data) => {
   }
 };
 
-const getUserPoints = (userId) => {
-  const db = readDatabase();
-  return db[userId] || 0;
+const getUserPoints = async (userId) => {
+  const row = await Points.findOne({ userId }).lean();
+  return row ? normalizePointValue(row.points) : 0;
 };
 
-const addPoints = (userId, points = 1) => {
-  const db = readDatabase();
-  db[userId] = (db[userId] || 0) + points;
-  return saveDatabase(db);
+const addPoints = async (userId, points = 1) => {
+  await Points.updateOne(
+    { userId },
+    { $inc: { points: normalizePointValue(points) }, $setOnInsert: { userId } },
+    { upsert: true }
+  );
+  return true;
 };
 
-const setPoints = (userId, points = 0) => {
-  const db = readDatabase();
-  db[userId] = points;
-  return saveDatabase(db);
+const setPoints = async (userId, points = 0) => {
+  await Points.updateOne(
+    { userId },
+    { $set: { userId, points: normalizePointValue(points) } },
+    { upsert: true }
+  );
+  return true;
 };
 
-const resetAllPoints = () => {
-  return saveDatabase({});
+const resetAllPoints = async () => {
+  await Points.deleteMany({});
+  return true;
 };
 
-const getTopUsers = (limit = 10) => {
-  const db = readDatabase();
-  return Object.entries(db)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, limit);
+const getTopUsers = async (limit = 10) => {
+  const rows = await Points.find({}).sort({ points: -1 }).limit(limit).lean();
+  return rows.map((row) => [row.userId, normalizePointValue(row.points)]);
 };
 
-const removePoints = (userId, points = 1) => {
-  const db = readDatabase();
-  if (db[userId]) {
-    db[userId] = Math.max(0, db[userId] - points);
-    return saveDatabase(db);
-  }
-  return false;
+const removePoints = async (userId, points = 1) => {
+  const current = await getUserPoints(userId);
+  if (!current) return false;
+  await setPoints(userId, Math.max(0, current - normalizePointValue(points)));
+  return true;
 };
 
-const removePointsFromAll = (points = 1) => {
-  const db = readDatabase();
+const removePointsFromAll = async (points = 1) => {
+  const db = await readDatabase();
   for (const userId in db) {
-    db[userId] = Math.max(0, db[userId] - points);
+    db[userId] = Math.max(0, db[userId] - normalizePointValue(points));
   }
   return saveDatabase(db);
 };
 
-const transferPoints = (fromUserId, toUserId, points) => {
-  const db = readDatabase();
-  const fromPoints = db[fromUserId] || 0;
+const transferPoints = async (fromUserId, toUserId, points) => {
+  const amount = normalizePointValue(points);
+  const fromPoints = await getUserPoints(fromUserId);
 
-  if (fromPoints < points) {
+  if (fromPoints < amount) {
     return { success: false, error: 'نقاطك غير كافية' };
   }
 
-  if (points <= 0) {
+  if (amount <= 0) {
     return { success: false, error: 'يجب أن تكون النقاط أكبر من صفر' };
   }
 
-  db[fromUserId] = fromPoints - points;
-  db[toUserId] = (db[toUserId] || 0) + points;
+  await setPoints(fromUserId, fromPoints - amount);
+  await addPoints(toUserId, amount);
+  const toTotal = await getUserPoints(toUserId);
 
-  if (saveDatabase(db)) {
-    return { success: true, fromRemaining: db[fromUserId], toTotal: db[toUserId] };
-  }
-
-  return { success: false, error: 'حدث خطأ أثناء التحويل' };
+  return { success: true, fromRemaining: fromPoints - amount, toTotal };
 };
 
 module.exports = {
@@ -101,5 +109,5 @@ module.exports = {
   getTopUsers,
   removePoints,
   removePointsFromAll,
-  transferPoints
+  transferPoints,
 };

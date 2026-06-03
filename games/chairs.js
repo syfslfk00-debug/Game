@@ -9,7 +9,7 @@ const TIME_TO_START = config.lobbyTime.chairs;
 module.exports = {
   name: 'chairs',
   aliases: ['كراسي'],
-  execute(message, args, callback) {
+  async execute(message, args, callback) {
     startGame(message, Math.floor(Date.now() / 1000 + TIME_TO_START / 1000), callback);
   }
 };
@@ -74,7 +74,7 @@ async function prepareRound(context, players, reservedPlayers, eliminatedPlayers
   if (players.length === 1) {
     const pts = config.winPoints.chairs;
     const points = typeof pts === 'object' ? Math.floor(Math.random() * (pts.max - pts.min + 1)) + pts.min : pts;
-    db.addPoints(players[0], points);
+    await db.addPoints(players[0], points);
     await context.channel.send({ content: `🏆 | الفائز هو <@${players[0]}>!` });
     callback(null, false, 0, null); return;
   }
@@ -157,7 +157,7 @@ async function prepareRound(context, players, reservedPlayers, eliminatedPlayers
       if (players.length === 1) {
         const pts = config.winPoints.chairs;
         const points = typeof pts === 'object' ? Math.floor(Math.random() * (pts.max - pts.min + 1)) + pts.min : pts;
-        db.addPoints(players[0], points);
+        await db.addPoints(players[0], points);
         await context.channel.send({ content: `🏆 | الفائز هو <@${players[0]}>!` });
       } else {
         await context.channel.send({ content: '🤷 | لا يوجد فائز.' });

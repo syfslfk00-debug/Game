@@ -27,8 +27,8 @@ module.exports = {
       return message.reply('يجب ادخال كمية صحيحة اكبر من صفر. مثال: `-اعطنقاط @user 100`');
     }
 
-    db.addPoints(target.id, amount);
-    const newPoints = db.getUserPoints(target.id);
+    await db.addPoints(target.id, amount);
+    const newPoints = await db.getUserPoints(target.id);
 
     await message.reply(
       `تم اعطاء **${amount}** نقطة لـ **${target.username}**\n` +

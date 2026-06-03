@@ -71,7 +71,7 @@ module.exports = {
    * @param {string[]} args
    * @param {function} callback
    */
-  execute(message, args, callback) {
+  async execute(message, args, callback) {
     if (GAME_ACTIVE) {
       message.reply(`> **❌ | لقد بدأت لعبة أخرى بالفعل. الرجاء الانتظار حتى انتهاء اللعبة الحالية.**`);
       callback();

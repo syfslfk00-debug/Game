@@ -4,7 +4,7 @@ const db = require('../database.js');
 module.exports = {
   name: 'button',
   aliases: ['زر'],
-  execute(message, args, callback) {
+  async execute(message, args, callback) {
     startGame(message, callback);
   }
 };
@@ -47,7 +47,7 @@ async function startGame(context, callback) {
       const points = timeTaken < 1 ? 10 : timeTaken < 2 ? 8 : timeTaken < 3 ? 6 : timeTaken < 5 ? 4 : 2;
 
       await db.addPoints(i.user.id, points);
-      const total = db.getUserPoints(i.user.id);
+      const total = await db.getUserPoints(i.user.id);
 
       const doneContainer = new ContainerBuilder()
         .setAccentColor(0x00FF00)

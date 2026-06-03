@@ -1,30 +1,78 @@
-﻿const fs = require('fs');
+const Settings = require('./models/Settings.js');
 
-if (!fs.existsSync('./settings.json')) {
-  fs.writeFileSync('./settings.json', JSON.stringify({ channels: [], disabledCommands: {} }, null, 2));
+// MongoDB-backed replacement for the previous settings.json file storage.
+
+const SETTINGS_KEY = 'global';
+
+async function getSettings() {
+  const settings = await Settings.findOneAndUpdate(
+    { key: SETTINGS_KEY },
+    { $setOnInsert: { key: SETTINGS_KEY, channels: [], disabledCommands: {} } },
+    { upsert: true, new: true }
+  ).lean();
+
+  if (!settings.channels) settings.channels = [];
+  if (!settings.disabledCommands) settings.disabledCommands = {};
+  return settings;
 }
 
-const read = () => {
-  try {
-    const data = JSON.parse(fs.readFileSync('./settings.json', 'utf8'));
-    if (!data.channels) data.channels = [];
-    if (!data.disabledCommands) data.disabledCommands = {};
-    return data;
-  } catch { return { channels: [], disabledCommands: {} }; }
+function mapToObject(value) {
+  if (!value) return {};
+  if (value instanceof Map) return Object.fromEntries(value.entries());
+  return { ...value };
+}
+
+const isChannelAllowed = async (id) => {
+  const settings = await getSettings();
+  return settings.channels.includes(id);
 };
 
-const save = (data) => {
-  try { fs.writeFileSync('./settings.json', JSON.stringify(data, null, 2)); } catch (e) { console.error('settings save error:', e); }
+const getAllowedChannels = async () => {
+  const settings = await getSettings();
+  return settings.channels;
 };
 
-const isChannelAllowed    = (id)           => read().channels.includes(id);
-const getAllowedChannels   = ()             => read().channels;
-const addChannel          = (id)           => { const d = read(); if (!d.channels.includes(id)) { d.channels.push(id); save(d); } };
-const removeChannel       = (id)           => { const d = read(); d.channels = d.channels.filter(c => c !== id); save(d); };
+const addChannel = async (id) => {
+  await Settings.updateOne(
+    { key: SETTINGS_KEY },
+    { $addToSet: { channels: id }, $setOnInsert: { key: SETTINGS_KEY, disabledCommands: {} } },
+    { upsert: true }
+  );
+};
 
-const isCommandDisabled   = (channelId, cmd) => { const d = read(); return (d.disabledCommands[channelId] || []).includes(cmd); };
-const disableCommand      = (channelId, cmd) => { const d = read(); if (!d.disabledCommands[channelId]) d.disabledCommands[channelId] = []; if (!d.disabledCommands[channelId].includes(cmd)) { d.disabledCommands[channelId].push(cmd); save(d); } };
-const enableCommand       = (channelId, cmd) => { const d = read(); if (d.disabledCommands[channelId]) { d.disabledCommands[channelId] = d.disabledCommands[channelId].filter(c => c !== cmd); save(d); } };
-const getDisabledCommands = ()             => read().disabledCommands;
+const removeChannel = async (id) => {
+  await Settings.updateOne(
+    { key: SETTINGS_KEY },
+    { $pull: { channels: id }, $setOnInsert: { key: SETTINGS_KEY, disabledCommands: {} } },
+    { upsert: true }
+  );
+};
+
+const isCommandDisabled = async (channelId, cmd) => {
+  const settings = await getSettings();
+  const disabledCommands = mapToObject(settings.disabledCommands);
+  return (disabledCommands[channelId] || []).includes(cmd);
+};
+
+const disableCommand = async (channelId, cmd) => {
+  await Settings.updateOne(
+    { key: SETTINGS_KEY },
+    { $addToSet: { [`disabledCommands.${channelId}`]: cmd }, $setOnInsert: { key: SETTINGS_KEY, channels: [] } },
+    { upsert: true }
+  );
+};
+
+const enableCommand = async (channelId, cmd) => {
+  await Settings.updateOne(
+    { key: SETTINGS_KEY },
+    { $pull: { [`disabledCommands.${channelId}`]: cmd }, $setOnInsert: { key: SETTINGS_KEY, channels: [] } },
+    { upsert: true }
+  );
+};
+
+const getDisabledCommands = async () => {
+  const settings = await getSettings();
+  return mapToObject(settings.disabledCommands);
+};
 
 module.exports = { isChannelAllowed, getAllowedChannels, addChannel, removeChannel, isCommandDisabled, disableCommand, enableCommand, getDisabledCommands };

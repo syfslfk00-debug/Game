@@ -71,7 +71,7 @@ const QUESTIONS = [
 module.exports = {
   name: 'question',
   aliases: ['سؤال'],
-  execute(message, args, callback) {
+  async execute(message, args, callback) {
     startGame(message, callback);
   }
 };
@@ -110,7 +110,7 @@ async function startGame(context, callback) {
       const points = timeTaken < 5 ? 8 : timeTaken < 10 ? 5 : timeTaken < 15 ? 3 : 1;
 
       await db.addPoints(msg.author.id, points);
-      const total = db.getUserPoints(msg.author.id);
+      const total = await db.getUserPoints(msg.author.id);
 
       const win = new ContainerBuilder()
         .setAccentColor(config.colors.question)

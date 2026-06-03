@@ -44,7 +44,7 @@ function resetGameData() {
 module.exports = {
   name: "roulette",
   aliases: ["روليت"],
-  execute(message, args, callback) {
+  async execute(message, args, callback) {
     const nowTime = Math.floor(Date.now() / 1000);
     startGame(message, nowTime, callback);
   },
@@ -331,9 +331,9 @@ async function prepareRound(
         return;
       }
 
-      const chooserScore = db.getUserPoints(randomPlayerId) || 0;
+      const chooserScore = await db.getUserPoints(randomPlayerId) || 0;
       const costs = config.abilityCosts.roulette;
-      const playerInv = inv.getItems(randomPlayerId);
+      const playerInv = await inv.getItems(randomPlayerId);
 
       const filteredPlayers = players.filter((p) => p.id !== randomPlayerId);
       const targetRows = [];
@@ -717,7 +717,7 @@ async function prepareRound(
               return;
             } else if (cid === "eliminate_nuclear") {
               await ii.update({ components: [] });
-              inv.useItem(randomPlayerId, 'nuclear');
+              await inv.useItem(randomPlayerId, 'nuclear');
               chooserObj.usedAbilities.add("nuclear");
               const others = players.filter((p) => p.id !== randomPlayerId);
               for (const op of others) {
@@ -746,7 +746,7 @@ async function prepareRound(
                 content: `🎲 | لقد قررت طرد مرتين. اختر اللاعب الأول.`,
                 ephemeral: true,
               });
-              inv.useItem(randomPlayerId, 'twice');
+              await inv.useItem(randomPlayerId, 'twice');
               chooserObj.usedAbilities.add("twice");
               kicktwice.count = 2;
               kicktwice.status = true;
@@ -769,7 +769,7 @@ async function prepareRound(
                 content: `🎲 | <@${randomPlayerId}> قرر إحياء لاعب...`,
                 components: reviveRows,
               });
-              inv.useItem(randomPlayerId, 'revive');
+              await inv.useItem(randomPlayerId, 'revive');
               chooserObj.usedAbilities.add("revive");
               const reviveCollector = ii.message.createMessageComponentCollector({
                 filter: (r) =>
@@ -863,7 +863,7 @@ async function prepareRound(
                   return;
                 }
                 if (chosenAbility === "reverse") {
-                  inv.useItem(randomPlayerId, 'reverse');
+                  await inv.useItem(randomPlayerId, 'reverse');
                   targetObj.reverseUntilRound = ROUND_COUNTER + 1;
                   chooserObj.usedAbilities.add("reverse");
                   await ai.update({
@@ -871,7 +871,7 @@ async function prepareRound(
                     components: [],
                   });
                 } else if (chosenAbility === "protect") {
-                  inv.useItem(randomPlayerId, 'protect');
+                  await inv.useItem(randomPlayerId, 'protect');
                   targetObj.protectedUntilRound = ROUND_COUNTER + 1;
                   chooserObj.usedAbilities.add("protect");
                   await ai.update({
@@ -879,7 +879,7 @@ async function prepareRound(
                     components: [],
                   });
                 } else if (chosenAbility === "freeze") {
-                  inv.useItem(randomPlayerId, 'freeze');
+                  await inv.useItem(randomPlayerId, 'freeze');
                   targetObj.frozenUntilRound = ROUND_COUNTER + 1;
                   chooserObj.usedAbilities.add("freeze");
                   await ai.update({

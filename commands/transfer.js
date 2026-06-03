@@ -4,7 +4,7 @@ const db = require('../database.js');
 module.exports = {
   name: 'تحويل',
   aliases: ['transfer', 'give'],
-  execute(message, args) {
+  async execute(message, args) {
     if (args.length < 2) {
       return message.reply('❌ | الاستخدام الصحيح: `-تحويل @المستخدم <عدد النقاط>`');
     }
@@ -23,7 +23,7 @@ module.exports = {
       return message.reply('❌ | يجب أن يكون عدد النقاط رقماً صحيحاً أكبر من صفر');
     }
 
-    const result = db.transferPoints(message.author.id, mentionedUser.id, pointsToTransfer);
+    const result = await db.transferPoints(message.author.id, mentionedUser.id, pointsToTransfer);
 
     if (!result.success) {
       return message.reply(`❌ | ${result.error}`);

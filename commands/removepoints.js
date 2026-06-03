@@ -27,14 +27,14 @@ module.exports = {
       return message.reply('يجب ادخال كمية صحيحة اكبر من صفر. مثال: `-خصمنقاط @user 50`');
     }
 
-    const before = db.getUserPoints(target.id);
+    const before = await db.getUserPoints(target.id);
 
     if (before === 0) {
       return message.reply(`**${target.username}** ما عنده نقاط اصلاً.`);
     }
 
-    db.removePoints(target.id, amount);
-    const after = db.getUserPoints(target.id);
+    await db.removePoints(target.id, amount);
+    const after = await db.getUserPoints(target.id);
     const deducted = before - after;
 
     await message.reply(

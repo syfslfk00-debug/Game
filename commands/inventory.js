@@ -28,9 +28,9 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function buildInventoryImage(userId, username) {
-  const points    = db.getUserPoints(userId);
-  const inventory = inv.getItems(userId);
+async function buildInventoryImage(userId, username) {
+  const points    = await db.getUserPoints(userId);
+  const inventory = await inv.getItems(userId);
 
   const owned = ITEMS.filter(it => (inventory[it.id] || 0) > 0);
 
@@ -199,7 +199,7 @@ module.exports = {
     const userId   = message.author.id;
     const username = message.author.username;
 
-    const buffer = buildInventoryImage(userId, username);
+    const buffer = await buildInventoryImage(userId, username);
 
     await message.reply({
       files: [{ attachment: buffer, name: 'inventory.png' }],

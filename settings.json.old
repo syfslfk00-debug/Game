@@ -1,0 +1,1 @@
+settings.json is retained only as legacy file storage. The application now uses MongoDB through settings.js.

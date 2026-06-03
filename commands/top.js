@@ -118,8 +118,8 @@ async function buildTopImage(entries, requester, allCount) {
   });
 
   const footerY  = H - FTR_H + 6;
-  const reqPoints = db.getUserPoints(requester.id);
-  const allUsers  = db.getTopUsers(1000);
+  const reqPoints = await db.getUserPoints(requester.id);
+  const allUsers  = await db.getTopUsers(1000);
   const reqRank   = allUsers.findIndex(([id]) => id === requester.id) + 1;
 
   ctx.strokeStyle = '#1e1e30';
@@ -162,8 +162,8 @@ module.exports = {
   async execute(message, args) {
     const limit    = args[0] ? parseInt(args[0]) : 10;
     const topLimit = Math.min(Math.max(limit, 1), 20);
-    const topUsers = db.getTopUsers(topLimit);
-    const allUsers = db.getTopUsers(1000);
+    const topUsers = await db.getTopUsers(topLimit);
+    const allUsers = await db.getTopUsers(1000);
 
     if (topUsers.length === 0) {
       return message.reply('لا يوجد لاعبين بعد.');
